@@ -7,15 +7,15 @@ import os
 discord_token = os.environ.get("DISCORD_TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-slash = SlashCommand(client, sync_commands=True)
+slash = SlashCommand(bot, sync_commands=True)
 
 
-
-@client.event
+@bot.event
 async def on_ready():
     print('Ready!')
 
-@client.event
+
+@bot.event
 async def on_message(message:Message):
     if message.author == bot.user:
         return
@@ -31,7 +31,8 @@ async def on_message(message:Message):
 async def _test(ctx: SlashContext):
     await ctx.send(content="Hello World!")
 
-def is_josh(member:Member) -> bool:
+
+def is_josh(member: Member) -> bool:
     josh_id = 273219725587382272  # josh's discord id that I looked up
     return member.id == josh_id
 
