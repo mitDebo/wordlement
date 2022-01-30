@@ -1,3 +1,5 @@
+import data
+
 import os
 import re
 from discord import Message, Intents
@@ -31,17 +33,19 @@ async def on_message(message: Message):
 
     match = re.match(r"Wordle ([0-9]+) ([1-6|X])/6(\*)?", message.content)
     if match is not None:
+        guild_id = message.guild.id
         player = message.author
         wordle_id = match.group(1).strip()
         score = match.group(2).strip()
-        is_hard = True if match.group(3) is not None else False
+        is_hard_mode = True if match.group(3) is not None else False
 
         if score == "X":
             score = "7"
         score = int(score)
 
-        await message.channel.send(f"{golf_score(score)} Score recorded for <@{message.author.id}>"
-                                   f"on {wordle_game(wordle_id, is_hard)}")
+        if data.add_new_score(guild_id, player.id, wordle_id, score, is_hard_mode):
+            await message.channel.send(f"{golf_score(score)} Score recorded for <@{message.author.id}> "
+                                       f"on {wordle_game(wordle_id, is_hard_mode)}")
 
 
 def golf_score(score: int) -> str:
@@ -67,7 +71,6 @@ def wordle_game(id: str, is_hard: bool) -> str:
         game_str = game_str + " (Hard Mode)"
 
     return game_str
-
 
 
 bot.run(discord_token)
