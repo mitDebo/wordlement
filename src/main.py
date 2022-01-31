@@ -44,9 +44,9 @@ async def _start_tournament(ctx: SlashContext, num_days: int = 14):
     success_message = f"**<@{ctx.author_id}> has started a new Wordlement!**\n" \
                       f"_{p_start_dt} - {p_end_dt}_\n\n" \
                       f"" \
-                      f"Submit wordle scores throughout the tournament, and they will be tracked golf style. Hard mode " \
-                      f"attempts count for one stroke less. At the end of the tournament, the winner will crowned " \
-                      f"champion until next tournament!"
+                      f"Submit wordle scores throughout the tournament, and they will be tracked golf style. Hard " \
+                      f"mode attempts count for one stroke less. At the end of the tournament, the winner will be " \
+                      f"crowned champion until next tournament!"
     await wordlement.out_channel(ctx.guild).send(success_message)
     await ctx.send("Tournament successfully created")
 
@@ -110,4 +110,3 @@ def wordle_game(worlde_id: int, is_hard: bool) -> str:
 
 
 bot.run(discord_token)
-

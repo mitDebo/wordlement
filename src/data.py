@@ -73,5 +73,3 @@ def __score_exists(guild_id:int, user_id:int, wordle_id:int) -> bool:
         "days.wordle_id": wordle_id
     })
     return False if result is None else True
-
-
