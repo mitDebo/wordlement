@@ -12,7 +12,7 @@ db = client.wordlement
 def add_new_tournament(guild_id: int, start_dt: datetime, end_dt: datetime):
     days = []
 
-    for x in range((end_dt-start_dt).days):
+    for x in range((end_dt-start_dt).days + 1):
         dt = start_dt + timedelta(days=x)
         days.append({
             "dt": dt,
@@ -69,7 +69,7 @@ def current_tournament(guild_id:int) -> {}:
 def __score_exists(guild_id:int, user_id:int, wordle_id:int) -> bool:
     result = db.tournaments.find_one({
         "guild_id": guild_id,
-        "days.scores.user_id": user_id,
+        "days.$.scores.user_id": user_id,
         "days.wordle_id": wordle_id
-    })
+    },)
     return False if result is None else True

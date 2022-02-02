@@ -1,9 +1,10 @@
 import wordlement
+import server_cfg
 
 from datetime import datetime, timedelta
 import os
 import re
-from discord import Message, Intents, TextChannel
+from discord import Message, Intents, TextChannel, Guild
 from discord.ext import commands
 from discord.ext.commands import has_guild_permissions
 from discord_slash import SlashCommand, SlashContext
@@ -51,6 +52,54 @@ async def _start_tournament(ctx: SlashContext, num_days: int = 14):
     await ctx.send("Tournament successfully created")
 
 
+@slash.slash(
+    name="out_channel",
+    description="Sets the channel the bot outputs to. Defaults to the system channel",
+    guild_ids=[937340367110553691,699613886487461918],
+    options=[
+        create_option(name="channel",
+                      description="The channel to set it to",
+                      option_type=7,
+                      required=False
+                      )
+    ]
+)
+@has_guild_permissions(administrator=True)
+async def _set_out_channel(ctx: SlashContext, channel: TextChannel):
+    wordlement.set_out_channel(ctx.guild, channel)
+    await ctx.reply("Done")
+
+
+@slash.slash(
+    name="scorecard",
+    description="Prints out your scorecard in the current tournament",
+    guild_ids=[937340367110553691,699613886487461918]
+)
+async def _scorecard(ctx: SlashContext, num_days: int = 14):
+    scorecard = get_scorecard_for_player(ctx.guild, ctx.author_id)
+    scorecard += scorecard_footer()
+
+    await ctx.reply(f"```{scorecard}```")
+
+
+@slash.slash(
+    name="leaderboard",
+    description="Prints out everyone's scorecards. Please do not spam this.",
+    guild_ids=[937340367110553691,699613886487461918]
+)
+async def _scorecard(ctx: SlashContext):
+    leaderboard = wordlement.get_leaderboard(ctx.guild)
+    scorecard = "```"
+    for ld in leaderboard:
+        if len(scorecard) > 3:
+            scorecard += "\n\n"
+        scorecard += get_scorecard_for_player(ctx.guild, ld[0])
+
+    scorecard += scorecard_footer() + "```"
+
+    await ctx.reply(scorecard)
+
+
 @bot.event
 async def on_message(message: Message):
     if message.author.bot:
@@ -80,8 +129,11 @@ async def on_message(message: Message):
             await message.reply(f"Please only submit a score for today's Wordle ({wordle_id_for_today})")
             return
         if wordlement.submit_score(guild_id, player.id, wordle_id, score, is_hard_mode):
-            await message.channel.send(f"{golf_score(score)} Score recorded for <@{message.author.id}> "
-                                       f"on {wordle_game(wordle_id, is_hard_mode)}")
+            reply = f"{golf_score(score)} Score recorded for <@{message.author.id}> on " \
+                      f"{wordle_game(wordle_id, is_hard_mode)}\n"
+            scorecard = f"```{get_scorecard_for_player(message.guild, message.author.id)}{scorecard_footer()}```"
+
+            await message.channel.send(reply + scorecard)
 
 
 def golf_score(score: int) -> str:
@@ -108,5 +160,28 @@ def wordle_game(worlde_id: int, is_hard: bool) -> str:
 
     return game_str
 
+
+def get_scorecard_for_player(guild: Guild, user_id: int) -> str:
+    scorecard = wordlement.get_scorecard_for_player(guild, user_id)
+    formatted_scorecard = format_wordle_scorecard(scorecard["scorecard"])
+    total = scorecard["total"]
+    return f"{guild.get_member(user_id).display_name} \n" \
+           f"{formatted_scorecard}\n" \
+           f"Total: {total}"
+
+
+def format_wordle_scorecard(scorecard: []) -> str:
+    result = ""
+    for x in scorecard:
+        if x is None:
+            result += "| "
+        else:
+            result = f"{result}|{x}"
+
+    return f"{result}|"
+
+
+def scorecard_footer():
+    return "\n\n*=Hard mode. Counts as n-1 towards score"
 
 bot.run(discord_token)
