@@ -89,7 +89,7 @@ async def _scorecard(ctx: SlashContext, num_days: int = 14):
 )
 async def _scorecard(ctx: SlashContext):
     leaderboard = wordlement.get_leaderboard(ctx.guild)
-    scorecard = "```"
+    scorecard = "```\n"
     for ld in leaderboard:
         if len(scorecard) > 3:
             scorecard += "\n\n"

@@ -58,7 +58,6 @@ def get_scorecard_for_player(guild: Guild, user_id: int) -> {}:
             score = [x for x in day["scores"] if x["user_id"] == user_id][0]
             raw_score = score["raw_score"]
             if score["is_hard_mode"]:
-
                 scorecard.append((str(raw_score) if raw_score < 7 else "X") + "*")
                 total += raw_score - 1
             else:
@@ -66,7 +65,7 @@ def get_scorecard_for_player(guild: Guild, user_id: int) -> {}:
                 total += raw_score
 
         else:
-            if day["dt"] < datetime.today():
+            if day["dt"].date() < datetime.today().date():
                 scorecard.append('X')
                 total += 7
             else:
