@@ -12,7 +12,7 @@ db = client.wordlement
 def add_new_tournament(guild_id: int, start_dt: datetime, end_dt: datetime):
     days = []
 
-    for x in range((end_dt-start_dt).days + 1):
+    for x in range((end_dt-start_dt).days):
         dt = start_dt + timedelta(days=x)
         days.append({
             "dt": dt,
@@ -52,13 +52,10 @@ def add_new_score(guild_id: int, user_id: int, wordle_id: int, raw_score: id, is
     return True
 
 
-def current_tournament(guild_id:int) -> {}:
-    today = datetime.today()
+def latest_tournament(guild_id:int) -> {}:
     tournament = db.tournaments.find({
-        "guild_id": guild_id,
-        "start_dt": {"$lte": today},
-        "end_dt": {"$gte": today}
-    })
+        "guild_id": guild_id
+    }).sort("start_dt", -1)
 
     for t in tournament:
         return t

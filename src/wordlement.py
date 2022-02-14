@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from discord import Guild, TextChannel
 
 
+hard_mode_reduction = 0.25
+
+
 def set_out_channel(guild: Guild, channel: TextChannel):
     server_cfg.set_out_channel(guild.id, channel.id)
 
@@ -19,12 +22,17 @@ def out_channel(guild: Guild) -> TextChannel:
     return guild.get_channel(text_channel_id)
 
 
-def is_correct_channel(guild:Guild, channel:TextChannel):
+def is_correct_channel(guild: Guild, channel: TextChannel):
     return True
 
 
-def current_tournament(guild: Guild):
-    return data.current_tournament(guild_id=guild.id)
+def latest_tournament(guild: Guild):
+    return data.latest_tournament(guild_id=guild.id)
+
+
+def is_a_tournament_running(guild: Guild) -> bool:
+    latest = latest_tournament(guild)
+    return datetime.today() < latest["end_dt"]
 
 
 async def start_new_tournament(guild: Guild, num_days: int) -> datetime:
@@ -46,7 +54,7 @@ def submit_score(guild_id: int,
 
 
 def get_scorecard_for_player(guild: Guild, user_id: int) -> {}:
-    tournament = current_tournament(guild)
+    tournament = latest_tournament(guild)
     if tournament is None:
         return None
 
@@ -59,7 +67,7 @@ def get_scorecard_for_player(guild: Guild, user_id: int) -> {}:
             raw_score = score["raw_score"]
             if score["is_hard_mode"]:
                 scorecard.append((str(raw_score) if raw_score < 7 else "X") + "*")
-                total += raw_score - 1
+                total += raw_score - hard_mode_reduction
             else:
                 scorecard.append((str(raw_score) if raw_score < 7 else "X"))
                 total += raw_score
@@ -71,13 +79,21 @@ def get_scorecard_for_player(guild: Guild, user_id: int) -> {}:
             else:
                 scorecard.append(None)
 
-    return {"scorecard": scorecard, "total": total}
+    return {"scorecard": scorecard, "total": math.ceil(total)}
 
 
 def get_leaderboard(guild: Guild) -> []:
-    tournament = current_tournament(guild)
+    tournament = latest_tournament(guild)
     totals = {}
-    for x in range(0, len(tournament["days"])):
+
+    start_dt = tournament["start_dt"]
+    end_dt = tournament["end_dt"]
+    total_days = (end_dt - start_dt).days
+
+    if datetime.today() < end_dt:
+        total_days = max((datetime.today() - start_dt).days, 1)
+
+    for x in range(0, total_days):
         day = tournament["days"][x]
         for score in day["scores"]:
             user_id = score["user_id"]
@@ -85,14 +101,19 @@ def get_leaderboard(guild: Guild) -> []:
             is_hard_mode = score["is_hard_mode"]
 
             if user_id in totals:
-                totals[user_id].append(raw_score - 1 if is_hard_mode else raw_score)
+                totals[user_id].append(raw_score - hard_mode_reduction if is_hard_mode else raw_score)
             else:
                 totals[user_id] = []
                 for p in range(0, x):
                     totals[user_id].append(7)
-                totals[user_id].append(raw_score - 1 if is_hard_mode else raw_score)
+                totals[user_id].append(raw_score - hard_mode_reduction if is_hard_mode else raw_score)
 
-    foo = totals.items()
+    for k in totals.keys():
+        user_scores = totals[k]
+        if len(user_scores) < total_days:
+            for i in range(0, total_days - len(user_scores)):
+                totals[k].append(7)
+
     totals = sorted(totals.items(), key=functools.cmp_to_key(compare_scores))
     return totals
 
@@ -101,8 +122,8 @@ def compare_scores(item1: (int, list), item2: (int, list)) -> int:
     i1 = item1[1]
     i2 = item2[1]
 
-    sum1 = sum(i1)
-    sum2 = sum(i2)
+    sum1 = math.ceil(sum(i1))
+    sum2 = math.ceil(sum(i2))
 
     if sum1 - sum2 != 0:
         return sum1 - sum2

@@ -35,7 +35,7 @@ async def on_ready():
 )
 @has_guild_permissions(administrator=True)
 async def _start_tournament(ctx: SlashContext, num_days: int = 14):
-    if wordlement.current_tournament(ctx.guild) is not None:
+    if wordlement.is_a_tournament_running(ctx.guild):
         await ctx.reply("A tournament is already running.")
         return
 
@@ -46,8 +46,8 @@ async def _start_tournament(ctx: SlashContext, num_days: int = 14):
                       f"_{p_start_dt} - {p_end_dt}_\n\n" \
                       f"" \
                       f"Submit wordle scores throughout the tournament, and they will be tracked golf style. Hard " \
-                      f"mode attempts count for one stroke less. At the end of the tournament, the winner will be " \
-                      f"crowned champion until next tournament!"
+                      f"mode attempts get a 0.25 pt stroke reduction. At the end of the tournament, the winner will " \
+                      f"be crowned champion until next tournament!"
     await wordlement.out_channel(ctx.guild).send(success_message)
     await ctx.send("Tournament successfully created")
 
@@ -108,7 +108,7 @@ async def on_message(message: Message):
     if not wordlement.is_correct_channel(message.channel.guild, message.channel):
         return
 
-    current_tournament = wordlement.current_tournament(message.channel.guild)
+    current_tournament = wordlement.latest_tournament(message.channel.guild)
     if current_tournament is None:
         return
 
@@ -182,6 +182,7 @@ def format_wordle_scorecard(scorecard: []) -> str:
 
 
 def scorecard_footer():
-    return "\n\n*=Hard mode. Counts as n-1 towards score"
+    return "\n\n*=Hard mode. Counts as n-0.25 towards score, total rounded up"
+
 
 bot.run(discord_token)
